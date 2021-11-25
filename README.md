@@ -351,6 +351,7 @@ print(isinstance(b, C))  # False / B는 C로부터 파생되지 않았다.
 |`m.values()`|`m`에 있는 모든 값으로 구성되는 순서열을 반환한다.|
 
 ## **5. 패키지**
+### **5-1.**
 모듈을 공통의 이름으로 묶는데 패키지를 사용한다. 패키지를 사용하면 모듈 사이에 이름 충돌 문제를 해결할 수 있다. 패키지를 만들려면 패키지 이름을 가진 디렉터리를 만들고 이 디렉터리에 `__init__.py` 파일을 생성하면 된다. 그런 다음 필요에 따라 소스 파일, 컴파일된 확장 기능, 하위 패키지 등을 추가하면 된다. 다음은 패키지를 구성하는 예를 보여준다.
 
 ```
@@ -379,9 +380,9 @@ Graphics/
 * `import Graphics.Primite.fill`
   * 하위 모듈인 `Graphics.Primitive.fill`을 로드한다. 이 모듈의 내용에 접근하려면 `Graphics.Primitive.fill.floodfill(img, x, y, color)` 같이 이름을 직접 써주어야 한다.
 * `from Graphics.Primitive import fill`
-  * 하위 모듈인 `fill`을 로드하며 앞쪽 패키지 이름 없이 사용할 수 있다. 예를 들면 `fill.floodfill(img, x, y, color)`
+  * 하위 모듈인 `fill`을 로드하며 앞쪽 패키지 이름 없이 사용할 수 있다. ex) `fill.floodfill(img, x, y, color)`
 * `from Graphics.Primitive.fill import floodfill`
-  * 하위 모듈 `fill`을 로드하며 `floodfill` 함수를 바로 사용할 수 있다. 예를 들어, `floodfill(img, x, y, color)`
+  * 하위 모듈 `fill`을 로드하며 `floodfill` 함수를 바로 사용할 수 있다. ex) `floodfill(img, x, y, color)`
 
 패키지의 일부가 처음으로 로드될 때 `__init__.py` 파일에 있는 코드가 실행된다. 이 파일은 비어있을 수 있고 패키지를 초기화하는 코드를 담을 수도 있다. `import`를 실행하는 동안 만나게 되는 모든 `__init__.py` 파일이 차례대로 실행된다. 즉, `import Graphics.Primitive.fill`이 실행되면 먼저 `Graphics` 디렉터리에 있는 `__init__.py` 파일이 실행되고 다음으로 `Primitive` 디렉터리에 있는 `__init__.py` 파일이 실행 된다.
 
@@ -435,10 +436,121 @@ from . import Primitive, Graph2d, Graph3d
 from . import lines, fill, text, ...
 ```
 이제 `import Graphics` 문은 모든 하위 모듈을 임포트하고 완전히 한정된 이름을 사용해서 해당 모듈에 접근할 수 있게 되었다. 상대적인 임포트는 앞에서 설명한대로 사용해야 한다. 간단히 `import module` 같은 문장을 사용하면 표준라이브러리 모듈이 로드된다.
+### **5-2.**
+패키지는 모듈을 모아 놓은 단위이다. 관련된 여러 개의 모듈을 계층적인 몇 개의 디렉터리로 분류해서 저장하고 계층화한다.
+#### **패키지의 구조**
+```
+Speech/
+    __init__.py
+    SignalProcessing/
+        __init__.py
+        LPC.py
+        FilterBank.py
+    Recognition/
+        __init__.py
+        Adaptation/
+            __init__.py
+            ML.py
+        HMM.py
+        NN.py
+        DTW.py
+    Synthesis/
+        __init__.py
+        Tagging.py
+        ProsodyControl.py
+```
+#### **`__init__.py` 파일**
+각 디렉터리에는 `__init__.py`파일이 반드시 있어야 한다. 이 파일은 패키지를 가져올 때 자동으로 실행되는 초기화 스크립트이다. 이 파일이 없으면 해당 폴더는 파이썬 패키지로 간주하지 않는다. `__init__.py` 파일은 패키지를 초기화하는 어떠한 파이썬 코드도 포함할 수 있다. 예를 들어 `Speech/__init__.py` 파일은 다음과 같다.
 
-# 참고 책
+```python
+__all__ = ['Recognition', 'SignalProcessing', 'Synthesis']
+__version__ = '1.2'
+
+from . import Recognition   # 상대 가져오기
+from . import SignalProcessing
+from . import Synthesis
+```
+`__all__` 변수는 `from Speech import *` 문에 의해서 가져오기를 할 모듈이나 패키지 이름들을 지정한다.
+
+```python
+from Speech import *
+
+
+>>> print(dir()) 
+['Recognition', 'SignalProcessing', 'Synthesis', '__builtins__', '__doc__', '__name__', '__package__']
+```
+
+`__init__.py` 이름 공간은 패키지 `Speech` 이름 공간이다. 즉, `__init__.py` 이름 공간에 정의하는 이름들은 패키지 `Speech` 이름 공간에 그대로 드러난다.
+
+```python
+import Speech
+
+>>> print(Speech.__version__)  
+'1.2'
+
+>>> print(Speech.__all__)
+['recognition', 'SignalProcessing', 'Synthesis']
+
+>>> print(dir(Speech))
+['Recognition', 'SignalProcessing', 'Synthesis', '__all__', '__builtints__', '__cached__', '__doc__', '__file__', '__name__', '__package__', '__path__', '__version__']
+
+>>> Speech.Recognition
+<module 'Speech.Recognition' from '~~~\Speech\Recognition\__init__.py'>
+```
+
+`from . import Recognition`과 같은 문에 의해서 하위 패키지인 `Recognitiion`이 가져와 진다. 이 경우 역시 `Recognition/__init__.py` 파일이 실행되어 패키지를 초기화한다. `Recognition/__init__.py` 파일의 예는 다음과 같다.
+```python
+__all__ = ['Adaptation', 'HMM', 'NN', 'DTW']
+
+from . import Adaptation
+from . import HMM
+from . import NN
+from . import DTW
+```
+
+`import Specch` 문에 의해서 실행되는 코드의 순서는 
+# **2021-11-25**
+## **1. 미래 기능 활성화**
+예전 버전의 파이썬과 호환성 문제가 있을 수 있는 새로운 언어 기능은 파이썬의 새로운 릴리스에서 보통 비활성화되어 있다. 이 기능을 활성화하려면
+```python
+from __future__ import feature
+```
+문을 사용하면 된다. 다음 예를 보자
+```python
+# 새로운 나누기 작동 방식을 활성화 한다
+
+from __future__ import division
+```
+이 문장은 모듈이나 프로그램에서 가장 앞에 나와야 한다. 또한 `__future__ import`의 유효 범위는 이 문장이 사용된 모듈에 국한된다. 따라서 미래 기능을 임포트한다고 하더라도 파이썬 라이브러리 모듈의 작동 방식이 변경되지 않으며, 인터프리터의 예전 작동 방식에 의존하는 오래된 코드의 작동방식도 변경되지 않는다
+
+|기능 이름|설명|
+|-|-|
+|`print_function`|`print`문 대신 파이썬 3.0의 `print()` 함수를 사용한다. 파이썬 2.6에서 처음 도입되었고 파이썬 3.0에서 기본으로 활성화된다.|
+
+`__feature__` 에서는 어떤 기능 이름도 제거된 적이 없다. 따라서 나중 파이썬 버전에서 어떤 기능이 기본으로 활성화된다 하더라도, 이 기능을 사용하는 기존 코드는 문제가 발생하지 않는다.
+## **2. `platform.system()`**
+시스템/OS 이름을 반환합니다, 가령 `'Linux'`, `'Darwin'`, `'Java'`, `'Windows'` 값을 판별할 수 없으면 빈 문자열이 반환됩니다.
+## **3. `subprocess`**
+`subprocess` 모듈은 새로운 프로세스 생성, 입출력 스트림 제어, 반환 코드 처리 작업을 일반화한 함수와 객체들을 제공한다. 이 모듈은 `os`, `popen2`, `commands` 같은 다양한 다른 모듈에 있는 기능을 한 곳에 모아놓았다
+```python
+Popen(args, **params)
+```
+새 명령을 하위 프로세스로 실행하고 새 프로세스를 나타내는 `Popen` 객체를 반환한다.  `args` 에 있는 명령은 `'ls -l'` 같은 문자열 또는 `['ls', '-l']` 같은 문자열 리스트로 지정한다. `parms`는 하위 프로세스의 다양한 속성을 제어하기 위해 설정하는 키워드 인수들을 나타낸다. 다음 키워드 인수들을 인식한다
+
+|키워드|설명|
+|-|-|
+|`shell`|`True`이면 `os.system()` 함수처럼 작동하는 유닉스 셸을 사용하여 명령을 실행한다.(명령어를 문자열로 쉘에 전달하려면 `True`로 설정해야 한다.) 기본 셸은 `/bin/sh`이지만 `executable` 설정을 통해 변경할 수 있다. `shell`의 기본 값은 `None`이다.|
+
+```
+p.communicate([input])
+```
+
+`input`로 주어진 데이터를 자식 프로세스의 표준 입력으로 전달하여 자식 프로세스와 통신한다. 일단 데이터를 전달하고 나면 표준 출력과 표준 에러에서 결과를 수집하면서 프로세스가 종료되기를 기다린다. 문자열인 `stdout`, `stderr`를 담은 튜플 `(stdout, stderr)`를 반환한다. 자식 프로세스로 보내는 데이터가 없으면 `input`을 `None`으로 설정한다(기본 값)
+# **참고**
 *데이비드 M. 비즐리, 『파이썬 완벽 가이드』, 송인철, 송현제 옮김, 인사이트(2012)*
 
 *더그 헬먼, 『예제로 배우는 파이썬 표준 라이브러리』, 권석기, 김우현 옮김, 에이콘(2020)*
 
 *이강성, 『파이썬3 바이블』, 프리렉(2013)*
+
+*https://docs.python.org/*
