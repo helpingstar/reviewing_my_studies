@@ -508,9 +508,9 @@ from . import NN
 from . import DTW
 ```
 
-`import Specch` 문에 의해서 실행되는 코드의 순서는 다음과 같다.
+`import Speech` 문에 의해서 실행되는 코드의 순서는 다음과 같다.
 
-![package](.image/package.png)
+![package](image/package.png)
 # **2021-11-25**
 ## **1. 미래 기능 활성화**
 예전 버전의 파이썬과 호환성 문제가 있을 수 있는 새로운 언어 기능은 파이썬의 새로운 릴리스에서 보통 비활성화되어 있다. 이 기능을 활성화하려면
